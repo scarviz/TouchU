@@ -8,12 +8,29 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.TextView;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.wearable.MessageApi;
+import com.google.android.gms.wearable.Node;
+import com.google.android.gms.wearable.NodeApi;
+import com.google.android.gms.wearable.Wearable;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
 public class MainActivity extends WearableActivity {
     private static final String TAG = "MainActivity";
+
+    /** タッチ動作を示す値 */
+    public static final String ACTION_DOWN = "ACTION_DOWN";
+
+    private static final String PATH = "/TouchU";
+
+    private GoogleApiClient mGoogleApiClient;
 
     private BoxInsetLayout mContainerView;
     private TextView mTextView;
@@ -26,6 +43,31 @@ public class MainActivity extends WearableActivity {
 
         mContainerView = (BoxInsetLayout) findViewById(R.id.container);
         mTextView = (TextView) findViewById(R.id.text);
+
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addApi(Wearable.API)
+                .addConnectionCallbacks(mConnectionCallbacks)
+                .addOnConnectionFailedListener(mOnConnectionFailedListener)
+                .build();
+    }
+
+    @Override
+    protected void onResume() {
+        Log.d(TAG, "onResume");
+        super.onResume();
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    protected void onDestroy() {
+        Log.d(TAG, "onDestroy");
+
+        if(mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
+            Log.d(TAG, "mGoogleApiClient disconnect");
+            mGoogleApiClient.disconnect();
+        }
+
+        super.onDestroy();
     }
 
     @Override
@@ -63,8 +105,66 @@ public class MainActivity extends WearableActivity {
             // 画面タッチ時
             case MotionEvent.ACTION_DOWN:
                 Log.d(TAG, "dispatchTouchEvent : ACTION_DOWN");
+                SendMessage(PATH, ACTION_DOWN);
                 break;
         }
         return super.dispatchTouchEvent(event);
     }
+
+    /**
+     * 端末へメッセージを送る
+     * @param path
+     * @param message
+     */
+    private void SendMessage(final String path, final String message) {
+        PendingResult<NodeApi.GetConnectedNodesResult> nodes = Wearable.NodeApi.getConnectedNodes(mGoogleApiClient);
+
+        nodes.setResultCallback(new ResultCallback<NodeApi.GetConnectedNodesResult>(){
+            @Override
+            public void onResult(NodeApi.GetConnectedNodesResult getConnectedNodesResult) {
+                for (Node node : getConnectedNodesResult.getNodes()) {
+                    PendingResult<MessageApi.SendMessageResult> messageResult =
+                            Wearable.MessageApi.sendMessage(mGoogleApiClient, node.getId(), path, message.getBytes());
+
+                    messageResult.setResultCallback(mResultCallback);
+                }
+            }
+        });
+    }
+
+    /**
+     * SendMessageコールバック
+     */
+    ResultCallback<MessageApi.SendMessageResult> mResultCallback = new ResultCallback<MessageApi.SendMessageResult>(){
+        @Override
+        public void onResult(MessageApi.SendMessageResult sendMessageResult) {
+            Status status = sendMessageResult.getStatus();
+            Log.d(TAG, "Status:" + status.toString());
+        }
+    };
+
+    /**
+     * Google Play Services接続コールバック
+     */
+    GoogleApiClient.ConnectionCallbacks mConnectionCallbacks = new GoogleApiClient.ConnectionCallbacks() {
+        @Override
+        public void onConnected(Bundle bundle) {
+            Log.d(TAG, "GoogleApiClient onConnected");
+        }
+
+        @Override
+        public void onConnectionSuspended(int i) {
+            Log.d(TAG, "GoogleApiClient onConnectionSuspended");
+        }
+    };
+
+    /**
+     * Google Play Services接続失敗時リスナー
+     */
+    GoogleApiClient.OnConnectionFailedListener mOnConnectionFailedListener = new GoogleApiClient.OnConnectionFailedListener() {
+        @Override
+        public void onConnectionFailed(ConnectionResult connectionResult) {
+            Log.d(TAG, "GoogleApiClient onConnectionFailed");
+        }
+    };
 }
