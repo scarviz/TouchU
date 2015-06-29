@@ -18,9 +18,13 @@ import com.unity3d.player.UnityPlayer;
 public class TouchUService extends Service {
     private static final String TAG = "TouchUService";
 
-    /** GameObject名のIntentキー */
+    /**
+     * GameObject名のIntentキー
+     */
     public static final String KEY_GAME_OBJ_NM = "KEY_GAME_OBJ_NM";
-    /** タッチ動作を示す値 */
+    /**
+     * タッチ動作を示す値
+     */
     public static final String ACTION_DOWN = "ACTION_DOWN";
 
     private static final String CALLBACK_NM = "onCallBack";
@@ -41,9 +45,9 @@ public class TouchUService extends Service {
         super.onCreate();
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addApi(Wearable.API)
                 .addConnectionCallbacks(mConnectionCallbacks)
                 .addOnConnectionFailedListener(mOnConnectionFailedListener)
+                .addApi(Wearable.API)
                 .build();
     }
 
@@ -55,7 +59,7 @@ public class TouchUService extends Service {
         }
 
         // mGameObjNameが未設定の場合はデフォルト値を設定する
-        if(TextUtils.isEmpty(mGameObjName)){
+        if (TextUtils.isEmpty(mGameObjName)) {
             mGameObjName = DEF_GAME_OBJ_NM;
         }
 
@@ -68,7 +72,7 @@ public class TouchUService extends Service {
     public void onDestroy() {
         Log.d(TAG, "onDestroy");
 
-        if(mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
+        if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
             Wearable.MessageApi.removeListener(mGoogleApiClient, mMessageListener);
             mGoogleApiClient.disconnect();
         }
@@ -111,12 +115,12 @@ public class TouchUService extends Service {
     /**
      * メッセージリスナー
      */
-    MessageApi.MessageListener mMessageListener = new MessageApi.MessageListener(){
+    MessageApi.MessageListener mMessageListener = new MessageApi.MessageListener() {
         @Override
         public void onMessageReceived(MessageEvent messageEvent) {
             String path = messageEvent.getPath();
             Log.d(TAG, "path:" + path);
-            if(TextUtils.isEmpty(path)){
+            if (TextUtils.isEmpty(path)) {
                 return;
             }
 
