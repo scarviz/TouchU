@@ -45,9 +45,9 @@ public class TouchUService extends Service {
         super.onCreate();
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addApi(Wearable.API)
                 .addConnectionCallbacks(mConnectionCallbacks)
                 .addOnConnectionFailedListener(mOnConnectionFailedListener)
-                .addApi(Wearable.API)
                 .build();
     }
 
@@ -75,6 +75,7 @@ public class TouchUService extends Service {
         if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
             Wearable.MessageApi.removeListener(mGoogleApiClient, mMessageListener);
             mGoogleApiClient.disconnect();
+            Log.d(TAG, "GoogleApiClient disconnect");
         }
 
         super.onDestroy();
